@@ -1,0 +1,42 @@
+version: '3.5'
+services:
+  GameMicroservice:
+   image: ${DOCKER_REGISTRY-}gameservice:v1
+   build:
+    context: ./GameMicroservice
+    dockerfile: Dockerfile
+   environment:
+    - ASPNETCORE_ENVIRONMENT=Production
+    - CONNECTIONSTRINGS__DEFAULTCONNECTION=Data Source=188.24.92.205,1433;Initial Catalog=GameDB;User Id=sa;Password=database
+   ports:
+    - "4201:80"
+  WordFunction:
+   image: ${DOCKER_REGISTRY-}wordservice:v1
+   build:
+    context: ./WordFunction
+    dockerfile: Dockerfile
+   environment:
+    - ASPNETCORE_ENVIRONMENT=Production
+   ports:
+    - "4202:80"
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 22181:2181
+  
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - 29092:29092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CREATE_TOPICS: "word-generator"
